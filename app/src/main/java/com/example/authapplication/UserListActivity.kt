@@ -13,6 +13,7 @@ import android.widget.RadioButton
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.QueryDocumentSnapshot
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -24,7 +25,13 @@ class UserListActivity : AppCompatActivity() {
 
     private val firestoreDb = Firebase.firestore.collection("users")
 
-    private val userListAdapter = UserListAdapter()
+    private val userListAdapter = UserListAdapter { userId ->
+        firestoreDb.document(userId).delete().addOnCompleteListener {
+            if (it.isSuccessful) {
+                getUsersFromFirestore()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,7 +119,7 @@ class UserListActivity : AppCompatActivity() {
     }
 }
 
-class UserListAdapter : RecyclerView.Adapter<UserItemViewHolder>() {
+class UserListAdapter(val onItemDeleted: (id: String) -> Unit) : RecyclerView.Adapter<UserItemViewHolder>() {
 
     private val users = mutableListOf<QueryDocumentSnapshot>()
 
@@ -145,6 +152,10 @@ class UserListAdapter : RecyclerView.Adapter<UserItemViewHolder>() {
             "f" -> "Female"
             else -> "Other"
         }
+
+        holder.deleteUserButton.setOnClickListener {
+            onItemDeleted(user.id)
+        }
     }
 
     override fun getItemCount(): Int {
@@ -152,40 +163,13 @@ class UserListAdapter : RecyclerView.Adapter<UserItemViewHolder>() {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class UserItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
     val nameView: TextView = view.findViewById(R.id.nameView)
     val dobView: TextView = view.findViewById(R.id.dobView)
     val genderView: TextView = view.findViewById(R.id.genderView)
+    val deleteUserButton: View = view.findViewById(R.id.deleteUserButton)
 }
 
 fun Calendar.toDDMMYYYY(): String {
     return "${get(Calendar.DAY_OF_MONTH)} / ${get(Calendar.MONTH) + 1} / ${get(Calendar.YEAR)}"
 }
-
-
-
-
-
-
-
-
-
